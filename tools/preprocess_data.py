@@ -170,8 +170,11 @@ def yield_from_files(fnames: list, semaphore):
     for fname in fnames:
         semaphore.acquire()
 
-        yield from yielder(fname, semaphore)
-
+        try:
+            yield from yielder(fname, semaphore)
+        except Exception as e:
+            print(f"Error reading {fname}: {e}")
+            continue
 
 def get_files(folder, suffices=["txt"], subdirs=True): # 也可使用 .json 或 .jsonl 格式
     file_dirs = []
