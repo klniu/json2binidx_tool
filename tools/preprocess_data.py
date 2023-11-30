@@ -173,19 +173,18 @@ def yield_from_files(fnames: list, semaphore):
         yield from yielder(fname, semaphore)
 
 
-def get_files(folder, suffices="txt,jsonl", subdirs=True): # 也可使用 .json 或 .jsonl 格式
+def get_files(folder, suffices=["txt"], subdirs=True): # 也可使用 .json 或 .jsonl 格式
     file_dirs = []
-    suffix_list = suffices.split(",")
     if subdirs:
         for root, dirs, files in os.walk(folder):
             for file in files:
-                for suffix in suffix_list:
+                for suffix in suffices:
                     if file.endswith(suffix):
                         file_dir = os.path.join(root, file)
                         file_dirs.append(file_dir)
     else:
         for file in os.listdir(folder):
-            for suffix in suffix_list:
+            for suffix in suffices:
                 if file.endswith(suffix):
                     file_dir = os.path.join(folder, file)
                     file_dirs.append(file_dir)
