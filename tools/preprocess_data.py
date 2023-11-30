@@ -64,11 +64,17 @@ def get_args():
     parser = argparse.ArgumentParser()
     group = parser.add_argument_group(title="input data")
     group.add_argument(
-        "--input",
+        "--directory",
         type=str,
         required=True,
-        help="Path to input jsonl files or lmd archive(s) - if using multiple archives, put them in a comma separated "
-        "list",
+        help="Directory to input jsonl files or lmd archive(s)",
+    )
+    group.add_argument(
+        "--extension",
+        type=str,
+        default="jsonl",
+        help="File extension of input files (default: jsonl), if there are multiple extensions, separate them with "
+             "commas",
     )
     group.add_argument(
         "--jsonl-keys",
@@ -167,6 +173,25 @@ def yield_from_files(fnames: list, semaphore):
         yield from yielder(fname, semaphore)
 
 
+def get_files(folder, suffices="txt,jsonl", subdirs=True): # 也可使用 .json 或 .jsonl 格式
+    file_dirs = []
+    suffix_list = suffices.split(",")
+    if subdirs:
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                for suffix in suffix_list:
+                    if file.endswith(suffix):
+                        file_dir = os.path.join(root, file)
+                        file_dirs.append(file_dir)
+    else:
+        for file in os.listdir(folder):
+            for suffix in suffix_list:
+                if file.endswith(suffix):
+                    file_dir = os.path.join(folder, file)
+                    file_dirs.append(file_dir)
+    return file_dirs
+
+
 def main():
     args = get_args()
     encoder = Encoder(args)
@@ -178,8 +203,9 @@ def main():
     # hence building up memory
     semaphore = Semaphore(10000 + args.workers)
 
+    files = get_files(args.directory, args.extension.split(","), subdirs=True)
     # use multiprocessing to iterate over input documents
-    fin = yield_from_files(args.input.split(","), semaphore)
+    fin = yield_from_files(files, semaphore)
 
     if args.workers > 1:
         pool = multiprocessing.Pool(args.workers, initializer=encoder.initializer)
